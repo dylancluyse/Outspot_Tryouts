@@ -8,12 +8,18 @@ class MollieController extends Controller
 {
     
     /*
-    public function initialize(){
-        $mollie = new \Mollie\Api\MollieApiClient();
-        $mollie->setApiKey("test_djMStRFvKuTbamgd6s9HzrJE2jPDTJ");
-        return $mollie;
-    }
+    Mollie-object aanmaken via aparte functie.
     */
+    public function initialize(){
+        try{
+            $mollie = new \Mollie\Api\MollieApiClient();
+            $mollie->setApiKey("test_djMStRFvKuTbamgd6s9HzrJE2jPDTJ");
+            return $mollie;
+        } catch (Throwable $e){
+            header();
+            exit;
+        }
+    }
 
     /*
     @$prijs is de prijs uit het formulier.
@@ -24,34 +30,54 @@ class MollieController extends Controller
         Nieuw Mollie-object om een betalingsobject aan te maken. 
         De meegegeven api-sleutel wordt ingesteld.
         */
+        $mollie = $this->initialize();
+        
+        /*
+        Betaling aanmaken met de prijs uit het formulier. De huidige tijd wordt bewaard als unieke waarde.
+        */
+        $orderid = time();
+
         try{
-            $mollie = new \Mollie\Api\MollieApiClient();
-            $mollie->setApiKey("test_djMStRFvKuTbamgd6s9HzrJE2jPDTJ");    
-        } catch(Throwable $e) {
-            header();
-            exit;
+            $payment = $mollie->payments->create([
+                "amount" => [
+                    "currency" => "EUR",
+                    "value" => "{$prijs}"
+                ],
+                "description" => "Outspot Trial {$orderid}",
+                "redirectUrl" => "/order/{$orderid}/",
+                "webhookUrl" => "/order/mollie-webhook/"
+            ]);
+    
+            /*
+            Gebruiker naar de checkout doorverwijzen.
+            */
+            header("Location: " . $payment->getCheckoutUrl(), true, 303);
+        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+            echo "API call failed: " . htmlspecialchars($e->getMessage());
         }
-
-        /*
-        Betaling aanmaken met de prijs uit het formulier.
-        */
-        $payment = $mollie->payments->create([
-            "amount" => [
-                "currency" => "EUR",
-                "value" => $prijs
-            ],
-            "description" => "Outspot Trial",
-            "redirectUrl" => "/order/1234/"
-        ]);
-
-        /*
-        Gebruiker naar de checkout doorverwijzen.
-        */
-        header("Location: " . $payment->getCheckoutUrl(), true, 303);
     }
 
-    public function toonStatus(){
+    /*
+    
+    $description = de unieke waarde (vb.: Outspot Trial ...) van een bestelling
+    
+    De omschrijving van de betaling wordt opgeslaan nadat de betaling werd aangemaakt.
+    Alle betalingen worden doorlopen en de betaling met de juiste omschrijving wordt behouden.
+    Alternatieve methode: de nieuwste komt bovenaan dus eventueel moet enkel de eerste betaling aangesproken worden.
+    */
+    public function toonStatus($description){
+        $mollie = $this->initialize();
 
+        $betalingen = $mollie->payments->page();
+
+        if (count($betalingen) === 0) {
+            echo "Geen betalingen gevonden.";
+        } else {
+            foreach($betalingen as $betaling){
+                if ($betaling->description == $description) {
+                    echo "<h1>Status: " . htmlspecialchars($betaling->status) . "</h1>";
+                  }
+            }
+        }
     }
-
 }

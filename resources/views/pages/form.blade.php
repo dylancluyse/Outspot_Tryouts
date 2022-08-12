@@ -2,13 +2,9 @@
 
 @section('content')
 
-
-{!! Form::open(['action' => ['FormController@store'], 'method' => 'POST']) !!}
-{{Form::label('price','Price')}}
-{{Form::text('price', '', ['class' => 'form-control', 'placeholder' => 'Amount'])}}
-
-{!! Form::close() !!}
-
-
+<form action="form" method="POST">
+    <label for="prijs"></label><input type="text" id="prijs" name="prijs" placeholder="Amount">
+    <input type="submit" value="Submit">
+</form>
 
 @endsection

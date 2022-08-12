@@ -9,9 +9,4 @@ class ResultController extends Controller
     public function index(){
         return view('pages.result');
     }
-
-    public function test($woord){
-        return $woord;
-    }
-    
 }
