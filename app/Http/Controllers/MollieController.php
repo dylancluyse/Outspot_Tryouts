@@ -36,6 +36,7 @@ class MollieController extends Controller
         Betaling aanmaken met de prijs uit het formulier. De huidige tijd wordt bewaard als unieke waarde.
         */
         $orderid = time();
+        $description = "Outspot Trial {$orderid}";
 
         try{
             $payment = $mollie->payments->create([
@@ -43,10 +44,12 @@ class MollieController extends Controller
                     "currency" => "EUR",
                     "value" => "{$prijs}"
                 ],
-                "description" => "Outspot Trial {$orderid}",
+                "description" => $description,
                 "redirectUrl" => "/order/{$orderid}/",
                 "webhookUrl" => "/order/mollie-webhook/"
             ]);
+
+            $this->setCookieOrderID($description);
     
             /*
             Gebruiker naar de checkout doorverwijzen.
@@ -55,6 +58,21 @@ class MollieController extends Controller
         } catch (\Mollie\Api\Exceptions\ApiException $e) {
             echo "API call failed: " . htmlspecialchars($e->getMessage());
         }
+    }
+
+    /*
+    Cookie bijhouden van de unieke omschrijving. Deze blijft maar twee uur geldig. 
+    */
+    public function setCookieOrderID($description){
+        try{
+            $minutes = 120;
+            $response = new Response('Set Cookie');
+            $response->withCookie(cookie('Payment ID', $description, $minutes));
+            return $response;
+        } catch (Throwable $e) {
+            report($e);
+        }
+        
     }
 
     /*

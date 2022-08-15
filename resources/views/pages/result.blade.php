@@ -1,8 +1,12 @@
 @extends('layouts.app')
 
-@section('content')
+<?php
+$id = PageController::getCookie();
 
-$mollie = new MollieController();
-$mollie->toonStatus();
-
-@endsection
+if(if_null($id)){
+    echo "Geen status gevonden.";
+} else {
+    echo MollieController::toonStatus($id);
+}
+    
+?>
